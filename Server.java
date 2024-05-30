@@ -15,24 +15,28 @@ public class Server{
         this.ServerSocket = serverSocket;
     }
 
-    public void startServer(){//Starts up server
+    public void startServer(){
         System.out.println("Server starting up...");
         try{
             while(!ServerSocket.isClosed()){
                 Socket socket = ServerSocket.accept();
-                //Add Security check here to verify user before allowing them to enter the chat room
-
-                System.out.println("A new client has connected");
+    
+                // Perform authentication
                 ClientHandler clientHandler = new ClientHandler(socket);
-
-                Thread thread = new Thread(clientHandler);
-                thread.start();
-
+                if (clientHandler.isAuthenticated()) {
+                    // Announcement after successful authentication
+                    System.out.println("A new client has connected");
+                    Thread thread = new Thread(clientHandler);
+                    thread.start();
+                } else {
+                    // Close connection if authentication fails
+                    clientHandler.closeEverything();
+                }
             }
-        }catch(Exception e){
+        } catch(Exception e){
             e.printStackTrace();
         }
-    }
+    }    
 
     public void closeServerSocket(){//Closes server
         System.out.println("Server shuting down...");

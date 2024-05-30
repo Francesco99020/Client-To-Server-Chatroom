@@ -8,24 +8,13 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class Client {
-    /*
-     * This class is for clients who want to connect to server.
-     * TODO: Clients must send username and password to server for verification before connecting to groupchat.
-     * This class contains the following actions for users to preform when connected to server:
-     *  1. Send messages
-     *  2. Receive messages
-     *  TODO: 3. Send Files
-     *  TODO: 4. Receive Files
-     */
-
-    //Objects to handle send and receive data
     private Socket socket;
     private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;   
+    private BufferedWriter bufferedWriter;
     private String username;
     private String password;
     
-    public Client(Socket socket, String username, String password){//instantiates Client
+    public Client(Socket socket, String username, String password){
         try{
             this.password = password;
             this.username = username;
@@ -37,7 +26,7 @@ public class Client {
         }
     }
 
-    public void sendMessage(){//Allows user to send a message for the server to broadcast
+    public void sendMessage(){
         try{
             bufferedWriter.write(password);
             bufferedWriter.newLine();
@@ -50,6 +39,9 @@ public class Client {
             Scanner scanner = new Scanner(System.in);
             while(socket.isConnected()){
                 String messageToSend = scanner.nextLine();
+                if (messageToSend == null || messageToSend.isEmpty()) {
+                    continue; // Skip sending empty messages
+                }
                 bufferedWriter.write(username + ": " + messageToSend);
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
@@ -59,38 +51,43 @@ public class Client {
         }
     }
 
-    public void listenForMessage(){//Listens for broadcasted messages from the server
+    public void listenForMessage() {
         new Thread(new Runnable() {
-            public void run(){
+            public void run() {
                 String msgFromGroupChat;
-
-                while(socket.isConnected()){
-                    try{
+    
+                try {
+                    while (socket.isConnected()) {
                         msgFromGroupChat = bufferedReader.readLine();
-                        System.out.println(msgFromGroupChat);
-                    }catch(Exception e){
-                        closeEverything(socket, bufferedReader, bufferedWriter);
+                        if (msgFromGroupChat != null) {
+                            if (msgFromGroupChat.equals("Authentication failed. Please enter correct username and password.")) {
+                                System.out.println("Authentication failed. Exiting...");
+                                closeEverything(socket, bufferedReader, bufferedWriter);
+                                return; // Exit the thread
+                            }
+                            System.out.println(msgFromGroupChat);
+                        }
                     }
+                } catch (IOException e) {
+                    closeEverything(socket, bufferedReader, bufferedWriter);
                 }
             }
         }).start();
-    }
+    }    
 
-    private void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {//Terminates client connection
+    private void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         try{
             if(bufferedReader != null) bufferedReader.close();
             if(bufferedWriter != null) bufferedWriter.close();
             if(socket != null) socket.close();
-            System.exit(0);
+            System.exit(0); // Exit the client program
         }catch(Exception e){
             e.printStackTrace();
         }
     }
 
     public static void main(String[] args) throws UnknownHostException, IOException {
-
         Scanner scanner = new Scanner(System.in);
-        //Make user need to send username and password for server to verify before allowing user to connect to group chat
         System.out.println("Enter your username for the group chat: ");
         String username = scanner.nextLine();
         System.out.println("Please enter password: ");
